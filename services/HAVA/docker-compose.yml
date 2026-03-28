@@ -1,0 +1,69 @@
+# docker-compose.yml
+
+# ${STT_MODEL_NAME}
+#  * tiny-int8 (43 MB): smallest, fastest, low accuracy
+#  * tiny (152 MB):
+#  * base-int8 (80 MB):
+#  * base (291 MB): 
+#  * small-int8 (255 MB):
+#  * small (968 MB):
+#  * medium-int8 (786 MB):
+#  * medium (3.1 GB): larger, slower, more accurate
+#  * large (not always supported or practical on smaller devices)
+#
+# ${VOICE_NAME}
+#  * en_US-lessac-medium: English, medium-sized, female voice
+#  * en_US-lessac-small: English, small-sized, ????
+#  * de_DE-jonas: German, male voice
+#  * ????
+
+services:
+  wyoming-whisper:
+    image: rhasspy/wyoming-whisper
+    container_name: wyoming-whisper
+    restart: unless-stopped
+    ports:
+      - "10300:10300"
+    volumes:
+      - /home/jdn/Data/WhisperData:/data
+    environment:
+      - STT_MODEL_NAME=medium-int8
+      - WHISPER_HOST_PORT=10300
+    command:
+      - --model
+      - ${STT_MODEL_NAME:-medium-int8}
+      - --language
+      - en
+    # enable CUDA
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+
+  wyoming-piper:
+    image: rhasspy/wyoming-piper
+    container_name: wyoming-piper
+    restart: unless-stopped
+    ports:
+      - "10200:10200"
+    volumes:
+      - /home/jdn/Data/PiperData:/data
+    environment:
+      - VOICE_NAME=en_US-lessac-medium
+      - PIPER_HOST_PORT=10200
+    command:
+      - --voice
+      - ${VOICE_NAME:-en_US-lessac-medium}
+    # enable CUDA:
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
