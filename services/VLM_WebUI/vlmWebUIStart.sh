@@ -2,5 +2,5 @@
 #
 # Script to start up VLM WebUI on DGX Spark
 
-source ${HOME}/Code/DGX_Spark/apps/VLM_WebUI/vlmwebui-env/bin/activate
+source ${HOME}/Code/DGX_Spark/services/VLM_WebUI/vlmEnv/bin/activate
 live-vlm-webui
