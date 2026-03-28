@@ -59,8 +59,8 @@ First create a Python virtual environment for this app and then install the requ
 
 ```bash
 python3 -m venv vlmEnv
-source ./vlmEnv/bin/activate
-pip install -r requirements
+source ${HOME}/Code/DGX_Spark/services/VLM_WebUI/vlmEnv/bin/activate
+pip install -r requirements.txt
 ```
 ##### VlmuiStart.sh
 
@@ -68,11 +68,32 @@ Script to start up VLM WebUI on DGX Spark. Offers a brower interface on `https:/
 
 ### Live VLM WebUI
 
-Connect to the local instance of Ollama with `http://<hostname>:11434/v1` and select one of the available Vision-Language/Multi-modal models.
+This web-app allows you to connect one of the available Vision-Language/Multi-modal models in the local Ollama server (with `http://<hostname>:<portnum>/v1`) with a video stream supplied by either a webcam attached to the machine on which the browser is currently running, or to network-attached webcams (by way of an RTSP connection, e.g., with `rtsp://<user>:<passwd>@<hostname>:<portnum>/<path>`).
 
-This app can connect to a webcam attached to the machine on which the browser is currently running, or it can connect to webcams by way of an RTSP connection -- e.g., `rtsp://<user>:<passwd>@<hostname>:<portnum>/<path>`.
-You select how frequently the VLM should sample the stream by selecting the Frame Processing Interval, in number of frames.
-There are a set of pre-defined prompts that can be selected from the Quick Presets menu, or a custom prompt can be entered in the given prompt box.
+In addition to selecting the video source and the VLM, you can select how frequently the VLM should sample the stream by selecting the Frame Processing Interval, in number of frames.
+Furthermore, there are a set of pre-defined prompts that can be selected from the Quick Presets menu, or a custom prompt can be entered in the given prompt box.
 The max number of tokens to use can also be given.
 
 The app shows a preview of the connected video stream, as well as the key resource stats of the DGX spark system -- i.e., GPU utilization, VRAM usage, CPU utilization, and system RAM use.
+
+### Comfy UI
+
+ComfyUI is a popular tool for generative image and animation generation. It is a graph-oriented tool (similar to blender) that allows different modules to be connected into a "workflow" (i.e., a graph of modules) that can be used to generate different types of output.
+
+For example, ????
+**TBD**
+
+### Installation and Setup
+
+First, clone the repo into a local directory on the DGX Spark (e.g., `git clone https://github.com/comfyanonymous/ComfyUI.git`), then create a Python virtual environment for this app, and then install the required Python packages.
+
+```bash
+python3 -m venv cuiEnv
+source ${HOME}/Code/DGX_Spark/services/ComfyUI/vlmEnv/bin/activate
+pip install -r ${HOME}/Code2/ComfyUI/requirements.txt
+```
+
+##### comfyUiStart.sh
+
+Script to start up ComfyUI on the DGX Spark. Offers a brower interface on `https://<hostname>:8090/`.
+
