@@ -4,6 +4,8 @@
 #
 # This runs in the background; kill it when done.
 
+#### WIP
+
 #### FIXME improve how it gets passwd or use keys
 #### TODO make tool for shutting down
 

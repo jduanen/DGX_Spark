@@ -4,6 +4,8 @@
 #
 # Usage: ./sparkOllamaQuery.sh <query> {<model> {"stream"}}
 
+#### WIP
+
 #### TODO think about output to a file as an option
 #### TODO parse the response JSON from CURL (with jq) and assemble the full response message
 
