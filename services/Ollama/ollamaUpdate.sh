@@ -15,4 +15,3 @@ docker rm ollama
 docker pull ollama/ollama:${VERSION}
 
 docker compose -f "${COMPOSE_FILE}" up -d ollama
-
