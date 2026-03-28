@@ -1,7 +1,7 @@
 #!/bin/bash
 # Script to start up the local STT and TTS containers for the HA Voice Assistant
 #
-# Usage: HAVA.sh {<STTmodelName> <TTSvoiceName>}
+# Usage: startHAVA.sh {<STTmodelName> <TTSvoiceName>}
 #
 # ${STT_MODEL_NAME}
 #  * tiny-int8 (43 MB): smallest, fastest, low accuracy
@@ -31,7 +31,7 @@ docker run -d \
   --restart unless-stopped \
   --name wyoming-whisper \
   -p ${WHISPER_HOST_PORT}:10300 \
-  -v /home/jdn/Data2/WhisperData:/data \
+  -v /home/jdn/Data/WhisperData:/data \
   rhasspy/wyoming-whisper \
   --model ${STT_MODEL_NAME} \
   --language en
@@ -47,7 +47,7 @@ docker run -d \
   --restart unless-stopped \
   --name wyoming-piper \
   -p ${PIPER_HOST_PORT}:10200 \
-  -v /home/jdn/Data2/PiperData:/data \
+  -v /home/jdn/Data/PiperData:/data \
   rhasspy/wyoming-piper \
   --voice ${VOICE_NAME}
 if [ $? -ne 0 ]; then
