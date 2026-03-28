@@ -8,11 +8,11 @@ VERSION=${1:-latest}
 
 COMPOSE_FILE="${HOME}/Code/DGX_Spark/services/Ollama_OpenWebUI/docker-compose.yml"
 
-docker compose -f "${COMPOSE_FILE}" down
+docker compose -f "${COMPOSE_FILE}" stop ollama
 
 docker rm ollama
 
 docker pull ollama/ollama:${VERSION}
 
-docker compose -f "${COMPOSE_FILE}" up -d
+docker compose -f "${COMPOSE_FILE}" up -d ollama
 
