@@ -38,3 +38,11 @@ More investigation is needed.
 #### Startup Both Services
 
 #### Stop Both Services
+
+#### Ollama Scripts
+
+##### ollamaModels.sh
+
+Script to list the models currently loaded in the Ollama container.
+
+#### Open-WebUI:ollama Scripts
