@@ -10,5 +10,4 @@ if ! nc -z -w2 "$HOSTNAME" "$PORTNUM" &>/dev/null; then
     exit 1
 fi
 
-curl -s http://${HOSTNAME}:${PORTNUM}/api/version
-echo ""
+curl -s http://${HOSTNAME}:${PORTNUM}/api/version | jq '.'
