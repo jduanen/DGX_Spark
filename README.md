@@ -28,26 +28,40 @@ docker compose down
 * Figure out best way to accelerate these containers -- e.g., use nvidia-mps
 * Figure out how to reduce the latency for more responsive voice interactions on HA
 
-## Ollama and Open-WebUI:ollama
+## Ollama and Open-WebUI
 
-My DGX Spark system also runs an Ollama model server and the Open-WebUI interface with it's own Ollama.
-I'm currently running these as two different services as I try to figure out how to best optimize the execution of each of them.
-I've made them share a common mount point so that they can share (presumably, read-only) models.
-More investigation is needed.
+My DGX Spark system also runs an Ollama model server and the Open-WebUI interface (without it's own Ollama instance).
+I'm currently running these as two different services to provide performance, failure, and update independence. However, there is a risk that I could get upgrade to an inconsistent state, so I'll have to be careful about that.
 
-I run Open-WebUI without any auth because it's on my private network, and I run it on port 12000 so that it can be run via the NVIDIA Sync app.
+I run Open-WebUI without any auth because it's on my private network, and I run it on port 12000 so that it can be run via the NVIDIA Sync app. Ollama listens on port 11434 so that both Open-WebUI and Home Assistant can access it.
 
-#### Startup Both Services
+I set 'WEBUI_AUTH = "false"' because my system is not shared.
 
-#### Stop Both Services
+The Ollama container stores its data (including downloaded models) in the volume 'ollama', and the Open-WebUI container stores its persistant data in the 'open-webui' volume.
+
+#### Running Both Services Together
+
+I use a docker compose yaml file to start up both the Open-WebUI and Ollama containers.
+
+Start by 'docker compose up -d' and stop by 'docker compose down'.
 
 #### Ollama Scripts
 
-##### ollamaModels.sh
+* ${HOME}/bin/
+  - ollamaList.sh: list models available for download from the Ollama website
+  --> TODO move these to DGX_Spark
+  - ollamaModels.sh: list the models currently loaded in the local Ollama container
+  - ollamaPull.sh: pull a model from the Ollama website into the local Ollama container
+* ${HOME}/Code/DGX_Spark/services/Ollama/
+  - ollamaModels.sh: list the models currently loaded in the Ollama container on the DGX Spark
+  - ollamaPrompt.sh: issues a prompt to the desired LLM model running on the DGX Spark
+  - ollamaUpdate.sh: update the Ollama container on the DGX Spark
+  - ollamaVersion.sh: print the version of the current Ollama instance running on the DGX Spark
 
-Script to list the models currently loaded in the Ollama container.
+#### Open-WebUI Scripts
 
-#### Open-WebUI:ollama Scripts
+* ${HOME}/Code/DGX_Spark/services/Open-WebUI/
+  - openWebUiUpdate.sh: update the Open-WebUI container on the DGX Spark
 
 ## VLM WebUI
 
