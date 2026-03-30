@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# This script issues a query to the desired LLM model running on the DGX spark
+# This script issues a prompt to an LLM model running on a DGX spark
 #
-# Usage: ./sparkOllamaQuery.sh <query> {<model> {"stream"}}
+# Usage: ./ollamaPrompt.sh <prompt> {<model> {"stream"}}
 
 #### WIP
 
