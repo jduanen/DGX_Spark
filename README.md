@@ -142,6 +142,10 @@ Script to start up ComfyUI on the DGX Spark. Offers a brower interface on `https
 
 From NVIDIA's documentation: "OpenClaw is a local-first AI agent that can remember conversations, adapt to your usage, uses context from your files and apps, and can be extended with community skills."
 
+The OpenClaw Gateway runs as a daemon and is the main server process for the agent. It manages the agents, the application state, and sessions. It does token-based authentication for the WebUI and CLI.
+All clients (e.g., CLI, TUI, WebUI, mobile apps, HA-side scripts, etc.) connect to the Gateway by way of WebSockets.
+It takes user inputs (e.g., chat, commands, web requests, etc.) and calls from tools (e.g., shell, HTTP, HA, etc.) and returns the agent's replies and events to the caller.
+
 ### Installation and Setup
 
 The installer installs all dependencies for OpenClaw, including Node.js and npm.
@@ -204,11 +208,12 @@ Consider running OpenClaw as a service:
 sudo systemctl enable --now openclaw.service
 ```
 
+
 ### Operation and Use Examples
 
 * Control UI
   - Web UI: http://127.0.0.1:18789/
-  - Web UI (with token): http://127.0.0.1:18789/#token=e8b223742ab92e348dac393f81eaaa7299361c2213caf057
+  - Web UI (with token): http://127.0.0.1:18789/#token=<token>
   - Gateway WS: ws://127.0.0.1:18789
   - Docs: https://docs.openclaw.ai/web/control-ui
 * Start TUI to "Hatch your bot"
