@@ -39,6 +39,25 @@ I set 'WEBUI_AUTH = "false"' because my system is not shared.
 
 The Ollama container stores its data (including downloaded models) in the volume 'ollama', and the Open-WebUI container stores its persistant data in the 'open-webui' volume.
 
+From the Open-WebUI browser page, you can select models to download from the Ollama website.
+I'm currently experimenting with various models. Below are the models I currently have loaded and their features and my use cases for them.
+
+|--Model Name:Size--|--Source--|--Features--|--My Use Cases--|
+| codellama:70b | Meta | generating and discussing code, built on Llama2 | coding assistant |
+| deepseek-coder-v2:latest | Deepseek | MoE, code LLM, comparable to GPT4-Turbo | coding assistant |
+| glm-4.7-flash:latest | ? | 30b-A3B MoE | OpenClaw default model |
+| gpt-oss:20b | OpenAI | reasoning, agentic, developer | Home Assistant Voice Assistant |
+| gpt-oss:120b | OpenAI | reasoning, agentic, developer | Home Assistant Voice Assistant, HA Chat |
+| llama3.1:70b | Meta | large context | Home Assistant Voice Assistant, HA Chat |
+| llama4:16x17b | Meta | multi-modal | coding assistant |
+| nemotron-cascade-2:30b | NVIDIA | MoE, 3B activated, reasoning/agentic | undetermined |
+| nemotron-3-nano:30b | NVIDIA | efficient, agentic | undetermined |
+| nemotron-3-super:120b | NVIDIA | MoE, 12B activated | undetermined |
+| qwen3:4b | Qwen | MoE | Home Assistant Voice Assistant |
+| qwen3.5:35b | Qwen | multi-modal | undetermined |
+| qwen3-vl:32b | Qwen | vision-language | streaming VLM |
+| starcoder2:15b | BigCode | coding | coding assistant |
+
 #### Running Both Services Together
 
 I use a docker compose yaml file to start up both the Open-WebUI and Ollama containers.
@@ -111,3 +130,114 @@ pip install -r ${HOME}/Code2/ComfyUI/requirements.txt
 
 Script to start up ComfyUI on the DGX Spark. Offers a brower interface on `https://<hostname>:8090/`.
 
+### Claude Code
+
+**TBD**
+
+### Open Code
+
+**TBD**
+
+## OpenClaw
+
+From NVIDIA's documentation: "OpenClaw is a local-first AI agent that can remember conversations, adapt to your usage, uses context from your files and apps, and can be extended with community skills."
+
+### Installation and Setup
+
+The installer installs all dependencies for OpenClaw, including Node.js and npm.
+
+'''bash
+curl -fsSL https://openclaw.ai/install.sh | bash
+'''
+
+This is an inherently insecure app, so they are up-front about needing to be careful with it.
+They recommend this as a baseline:
+│  - Pairing/allowlists + mention gating.                                                    │
+│  - Multi-user/shared inbox: split trust boundaries (separate gateway/credentials, ideally  │
+│    separate OS users/hosts).                                                               │
+│  - Sandbox + least-privilege tools.                                                        │
+│  - Shared inboxes: isolate DM sessions (`session.dmScope: per-channel-peer`) and keep      │
+│    tool access minimal.                                                                    │
+│  - Keep secrets out of the agent’s reachable filesystem.                                   │
+│  - Use the strongest available model for any bot with tools or untrusted inboxes.          │
+│                                              
+They also recommend running these commands regularly:
+│  openclaw security audit --deep                                                            │
+│  openclaw security audit --fix                                                             │
+And read: https://docs.openclaw.ai/gateway/security
+
+I connect it to my Ollama instance running on the DGX Spark, in local-only mode.
+I skipped channels and will add channel selections later. Options that I'm interested in include: Google Chat, Signal, Telegram, and WhatsApp.
+I also skipped search provider for now. I can configure it later with `openclaw configure --section web`.
+I installed the missing skill dependencies that I think I'll need at first.
+
+Skills are commonly shipped using Homebrew, so I have to install it on the DGX Spark.
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+Also have to install uv.
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Can add the optional Android app for camera/canvas features.
+
+The Gateway Token provides shared auth for the Gateway and Control UI.
+  * Token stored in: `~/.openclaw/openclaw.json` (gateway.auth.token) or OPENCLAW_GATEWAY_TOKEN.
+  * view Token: `openclaw config get gateway.auth.token`
+  * generate token: `openclaw doctor --generate-gateway-token`
+The Web UI keeps dashboard URL tokens in memory for the current tab and strips them from the URL after load.
+You can open the dashboard anytime with: `openclaw dashboard --no-open`
+  * if prompted, paste the token into Control UI settings (or use the tokenized dashboard URL).
+
+The setup script writes config info into `~/.openclaw/openclaw.json`.
+
+Startup Optimizations suggested for low-power hosts:
+```bash
+export NODE_COMPILE_CACHE=/var/tmp/openclaw-compile-cache
+mkdir -p /var/tmp/openclaw-compile-cache
+export OPENCLAW_NO_RESPAWN=1
+```
+
+Consider running OpenClaw as a service:
+```bash
+sudo systemctl enable --now openclaw.service
+```
+
+### Operation and Use Examples
+
+* Control UI
+  - Web UI: http://127.0.0.1:18789/
+  - Web UI (with token): http://127.0.0.1:18789/#token=e8b223742ab92e348dac393f81eaaa7299361c2213caf057
+  - Gateway WS: ws://127.0.0.1:18789
+  - Docs: https://docs.openclaw.ai/web/control-ui
+* Start TUI to "Hatch your bot"
+  - defining action that personalizes the agent
+  - 
+
+* Selected CLI Commands
+  - Docs: https://docs.openclaw.ai/cli
+  - `openclaw --version`
+  - `openclaw status`
+  - `openclaw logs`
+  - `openclaw doctor`: ?
+  - `openclaw update`: ?
+  - `openclaw security audit --deep`: ?
+  - `openclaw ?`: ?
+  - Examples:
+    * `openclaw models --help`: show detailed help for the models command
+    * `openclaw channels login --verbose`: link personal WhatsApp Web and show QR + connection logs
+    * `openclaw message send --target +15555550123 --message "Hi" --json`: send via your web session and print JSON result
+    * `openclaw gateway --port 18789`: run the WebSocket Gateway locally
+    * `openclaw --dev gateway`: run a dev Gateway (isolated state/config) on ws://127.0.0.1:19001
+    * `openclaw gateway --force`: kill anything bound to the default gateway port, then start it
+    * `openclaw gateway ...`: gateway control via WebSocket
+    * `openclaw agent --to +15555550123 --message "Run summary" --deliver`: talk directly to the agent using the Gateway (optionally send the WhatsApp reply)
+    * `openclaw message send --channel telegram --target @mychat --message "Hi"`: send via your Telegram bot
+
+
+## NemoClaw
+
+A wrapper for OpenClaw that provides improved security.
+
+**TBD**
