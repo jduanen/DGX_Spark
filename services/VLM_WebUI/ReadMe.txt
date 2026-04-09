@@ -1,8 +1,8 @@
 Vision-Language Model Web UI
 
 * connects to (local or RTSP) video streams, takes periodic snapshots, and returns text descriptions of the images
-
-TODO:
+* run the 'vlmWebUIStart.sh' script to activate the venv and start the interactive GUI
+* TODO:
   - experiment to find the best model for my use case
   - create a standalone (as opposed to, web-browser-based) application
   - integrate with Home Assistant
