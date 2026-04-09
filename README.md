@@ -109,7 +109,7 @@ The max number of tokens to use can also be given.
 
 The app shows a preview of the connected video stream, as well as the key resource stats of the DGX spark system -- i.e., GPU utilization, VRAM usage, CPU utilization, and system RAM use.
 
-### Comfy UI
+## Comfy UI
 
 ComfyUI is a popular tool for generative image and animation generation. It is a graph-oriented tool (similar to blender) that allows different modules to be connected into a "workflow" (i.e., a graph of modules) that can be used to generate different types of output.
 
@@ -130,11 +130,16 @@ pip install -r ${HOME}/Code2/ComfyUI/requirements.txt
 
 Script to start up ComfyUI on the DGX Spark. Offers a brower interface on `https://<hostname>:8090/`.
 
-### Claude Code
+## Claude Code
 
 **TBD**
 
-### Open Code
+* Best coding models for running locally on Ollama (in order of preference)
+  - qwen3-coder:30b
+  - gpt-oss:20b
+  - deepseek-coder-v2:latest
+
+## Open Code
 
 **TBD**
 
@@ -146,7 +151,7 @@ The OpenClaw Gateway runs as a daemon and is the main server process for the age
 All clients (e.g., CLI, TUI, WebUI, mobile apps, HA-side scripts, etc.) connect to the Gateway by way of WebSockets.
 It takes user inputs (e.g., chat, commands, web requests, etc.) and calls from tools (e.g., shell, HTTP, HA, etc.) and returns the agent's replies and events to the caller.
 
-### Installation and Setup
+### Direct Installation and Setup
 
 The installer installs all dependencies for OpenClaw, including Node.js and npm.
 
@@ -207,7 +212,50 @@ Consider running OpenClaw as a service:
 ```bash
 sudo systemctl enable --now openclaw.service
 ```
+OpenClaw works best with a context window of 32K tokens or more.
+```bash
+ollama run gpt-oss:120b
+/set parameter num_ctx 32768
+^D
+```
 
+#### Configuration Files
+
+All of the instructions and state are contained in Markdown files in `~/.openclaw/workspace/`.
+
+The basic workspace files are:
+* SOUL.md: the OpenClaw agent's identity (sets personality, tone, boundaries)
+  - this is treated as part of the system prompt and is read at that start of each session
+  - this shapes who the agent is and how it behaves
+* BOOTSTRAP.md: First-run setup
+  - run once the first time someone chats with this agent
+  - this sets the user's name and persona, teaches the agent about the user
+  - initializes the basic workspace files
+  - used only on the first chat, subsequently the agent uses SOUL.md, USER.md, and MEMORY.md
+* USER.md: stable, static, and concise information about the user (stable facts about the user)
+  - this is the agent's profile of the user
+  - it is loaded into the system prompt at the start of every session
+  - add your base identity, context and preferences, technical environment notes, and soft ground rules, e.g.,
+    * name/nickname, timezone, main uses cases (e.g., HA, Python, SDR, etc.)
+    * preferred style (e.g., bullets vs. prose), concise vs. verbose, use of code examples
+    * constraints on the agent (e.g, never suggest risky shell commands without confirmation)
+    * typical os and HW (e.g., Ubuntu 24.04, DGX Spark), services in use (e.g., HA), tools (e.g., Docker, Python, SublimeText, etc.)
+    * how you want the agent to behave (e.g., prefer step-by-step instructions, always ask before running destructive/risky commands)
+* MEMORY.md: ? (facts learned over time from conversations)
+  - dynamic, updates over time
+* IDENTITY.md: short file loaded first in every new session
+  - agent's name (e.g., ????)
+  - agent's role (e.g., Home Manager, Code Sidekick, etc.)
+  - vibe (e.g., witty, stoic, snarky, curious, etc.)
+  - agent's signature emoji
+  - avatar: point to an image in the workspace (e.g., 'avatars/agent.png') or a URL that the WebUI can load
+* TOOLS.md: ?
+  - 
+* AGENTS.md: ? (rules, routing, and "how to behave")
+  - when to speak, memory policies, safety
+  - ?
+* STYLE.md: controls how the agent talks and formats its replies
+  - ?
 
 ### Operation and Use Examples
 
@@ -239,7 +287,29 @@ sudo systemctl enable --now openclaw.service
     * `openclaw gateway ...`: gateway control via WebSocket
     * `openclaw agent --to +15555550123 --message "Run summary" --deliver`: talk directly to the agent using the Gateway (optionally send the WhatsApp reply)
     * `openclaw message send --channel telegram --target @mychat --message "Hi"`: send via your Telegram bot
+    * `openclaw doctor --generate-gateway-token --force`: regenerate gateway token (invalidate previous one)
 
+### Uninstall Direct Installation
+
+* Remove OpenClaw installed via one-liner above
+  - `openclaw uninstall --all --yes --non-interactive`
+  - removes gateway and services and local data and config information
+* Remove the CLI via npm, also removes the global package
+  - `npm rm -g openclaw`
+* Clean up remaining files
+  - `rm -rf ~/.openclaw ~/.openclaw/workspace`
+  - `rm -rf ~/.clawdbot ~/.moltbot ~/.molthub`
+* If run as a service, disable and remove it
+  - ```bash
+systemctl --user disable --now openclaw-gateway.service
+rm -f ~/.config/systemd/user/openclaw-gateway.service
+systemctl --user daemon-reload
+    ```
+* Verify that it has been removed
+  - ```bash
+which openclaw
+openclaw --version
+    ```
 
 ## NemoClaw
 
