@@ -28,19 +28,28 @@ docker compose down
 * Figure out best way to accelerate these containers -- e.g., use nvidia-mps
 * Figure out how to reduce the latency for more responsive voice interactions on HA
 
-## Ollama and Open-WebUI
+## DGX Services
 
-My DGX Spark system also runs an Ollama model server and the Open-WebUI interface (without it's own Ollama instance).
-I'm currently running these as two different services to provide performance, failure, and update independence. However, there is a risk that I could get upgrade to an inconsistent state, so I'll have to be careful about that.
+My DGX Spark system runs a set of services that can be relied upon to be always running.
+The DGX Services consist of the following container-based services:
+  - Ollama: locally serves all the models that have been downloaded to it
+  - OpenWebUI: web-browser-accessible GUI front-end for the models served by the Ollama container
+  - Claude Code: local coding assistant that uses the models provided by the Ollama container
 
-I run Open-WebUI without any auth because it's on my private network, and I run it on port 12000 so that it can be run via the NVIDIA Sync app. Ollama listens on port 11434 so that both Open-WebUI and Home Assistant can access it.
+All of the containers that comprise the DGX Services are started and stopped by using the docker-compose.yml file.
+You start all the services with `docker compose up -d` and stop them all with `docker compose down`.
+You can monitor the logs of all of the services with `docker compose logs`.
+The individual containers can still be managed with standard docker commands, but it is preferred to use docker compose commands. For example, to start the Claude Code container, use `docker compose up -d claude-code` (or `docker compose up -d --no-deps claude-code`, to start only Claude Code, and none of its dependencies).
 
-I set 'WEBUI_AUTH = "false"' because my system is not shared.
+Currently, the STT/TTS containers are run by a separate service, called HAVA. I am considering moving these services under the DGX Services umbrella.
+
+### Ollama Service
+
+????
 
 The Ollama container stores its data (including downloaded models) in the volume 'ollama', and the Open-WebUI container stores its persistant data in the 'open-webui' volume.
 
-From the Open-WebUI browser page, you can select models to download from the Ollama website.
-I'm currently experimenting with various models. Below are the models I currently have loaded and their features and my use cases for them.
+#### Local Ollama Models
 
 |--Model Name:Size--|--Source--|--Features--|--My Use Cases--|
 | codellama:70b | Meta | generating and discussing code, built on Llama2 | coding assistant |
@@ -58,12 +67,6 @@ I'm currently experimenting with various models. Below are the models I currentl
 | qwen3-vl:32b | Qwen | vision-language | streaming VLM |
 | starcoder2:15b | BigCode | coding | coding assistant |
 
-#### Running Both Services Together
-
-I use a docker compose yaml file to start up both the Open-WebUI and Ollama containers.
-
-Start by 'docker compose up -d' and stop by 'docker compose down'.
-
 #### Ollama Scripts
 
 * ${HOME}/bin/
@@ -76,6 +79,16 @@ Start by 'docker compose up -d' and stop by 'docker compose down'.
   - ollamaPrompt.sh: issues a prompt to the desired LLM model running on the DGX Spark
   - ollamaUpdate.sh: update the Ollama container on the DGX Spark
   - ollamaVersion.sh: print the version of the current Ollama instance running on the DGX Spark
+
+### Open WebUI Service
+
+????
+
+From the Open-WebUI browser page, you can select models to download from the Ollama website.
+I'm currently experimenting with various models. Below are the models I currently have loaded and their features and my use cases for them.
+
+I set 'WEBUI_AUTH = "false"' because my system is not shared.
+I am running Open-WebUI without any auth because it's on my private network, and I run it on port 12000 so that it can be run via the NVIDIA Sync app. Ollama listens on port 11434 so that both Open-WebUI and Home Assistant can access it.
 
 #### Open-WebUI Scripts
 
@@ -151,7 +164,9 @@ The OpenClaw Gateway runs as a daemon and is the main server process for the age
 All clients (e.g., CLI, TUI, WebUI, mobile apps, HA-side scripts, etc.) connect to the Gateway by way of WebSockets.
 It takes user inputs (e.g., chat, commands, web requests, etc.) and calls from tools (e.g., shell, HTTP, HA, etc.) and returns the agent's replies and events to the caller.
 
-### Direct Installation and Setup
+### Direct Use
+
+????
 
 The installer installs all dependencies for OpenClaw, including Node.js and npm.
 
@@ -219,6 +234,8 @@ ollama run gpt-oss:120b
 ^D
 ```
 
+#### Installation and Setup
+
 #### Configuration Files
 
 All of the instructions and state are contained in Markdown files in `~/.openclaw/workspace/`.
@@ -257,7 +274,7 @@ The basic workspace files are:
 * STYLE.md: controls how the agent talks and formats its replies
   - ?
 
-### Operation and Use Examples
+#### Operation and Use Examples
 
 * Control UI
   - Web UI: http://127.0.0.1:18789/
@@ -289,7 +306,7 @@ The basic workspace files are:
     * `openclaw message send --channel telegram --target @mychat --message "Hi"`: send via your Telegram bot
     * `openclaw doctor --generate-gateway-token --force`: regenerate gateway token (invalidate previous one)
 
-### Uninstall Direct Installation
+#### Uninstall
 
 * Remove OpenClaw installed via one-liner above
   - `openclaw uninstall --all --yes --non-interactive`
@@ -310,6 +327,10 @@ systemctl --user daemon-reload
 which openclaw
 openclaw --version
     ```
+
+### Containerized Use
+
+????
 
 ## NemoClaw
 
