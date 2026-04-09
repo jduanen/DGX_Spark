@@ -6,7 +6,7 @@
 
 VERSION=${1:-latest}
 
-COMPOSE_FILE="${HOME}/Code/DGX_Spark/services/Ollama_OpenWebUI/docker-compose.yml"
+COMPOSE_FILE="${HOME}/Code/DGX_Spark/services/DGX_Services/docker-compose.yml"
 
 docker compose -f "${COMPOSE_FILE}" stop open-webui
 
