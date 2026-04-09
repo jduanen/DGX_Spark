@@ -21,11 +21,16 @@ services:
     environment:
       OLLAMA_BASE_URL: http://ollama:11434
       WEBUI_AUTH: "false"
+      AUTH_MODE: none
+      STATIC_USERNAME: admin
+      STATIC_PASSWORD: xyzzy
+      DISABLE_TELEMETRY: 1
     volumes:
       - open-webui:/app/backend/data
     depends_on:
       - ollama
     restart: unless-stopped
+    gpus: all
 
 volumes:
   ollama:
