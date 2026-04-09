@@ -27,32 +27,6 @@ services:
       - ollama
     restart: unless-stopped
 
-  claude-code:
-    image: node:20  # full Debian Node
-    container_name: claude-code
-    working_dir: /workspace
-    volumes:
-      - ${HOME}/Code:/workspace  # mount my code dir
-      - /var/run/docker.sock:/var/run/docker.sock  # Optional: for exec perms
-    environment:
-      - ANTHROPIC_BASE_URL=http://ollama:11434/v1
-      - ANTHROPIC_AUTH_TOKEN=ollama
-      - ANTHROPIC_API_KEY=
-      - ANTHROPIC_MODEL=qwen3-coder  # preferred local model
-      - PATH=/usr/local/bin:/workspace/node_modules/.bin:$PATH
-    command: >
-      sh -c "
-        npm install -g @anthropic-ai/claude-code &&
-        npm install -g @anthropic-ai/sdk &&
-        echo 'Claude Code installed, starting...' &&
-        claude
-      "
-    depends_on:
-      - ollama
-    restart: unless-stopped
-    stdin_open: true
-    tty: true  # for interactive Claude Code session
-
 volumes:
   ollama:
   open-webui:
