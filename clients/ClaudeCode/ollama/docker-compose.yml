@@ -1,0 +1,25 @@
+services:
+  claude-code:
+    image: claude-code-ollama:latest
+    container_name: claude-code
+    gpus: all
+    stdin_open: true
+    tty: true
+    environment:
+      ANTHROPIC_AUTH_TOKEN: ollama
+      ANTHROPIC_API_KEY: ""  # leave empty for local Ollama
+      ANTHROPIC_BASE_URL: http://192.168.166.7:11434
+      CLAUDE_MODEL: ${CLAUDE_MODEL:?set CLAUDE_MODEL in your shell or .env}
+    volumes:
+      - ${WORKSPACE_DIR:-.}:/workspace  # mounts current dir for code editing
+    working_dir: /workspace
+    entrypoint: ["/bin/bash", "-lc"]
+    command: ['exec claude --model "$CLAUDE_MODEL"']
+    #command: ["claude", "--model", "$CLAUDE_MODEL"]
+    restart: unless-stopped
+    networks:
+      - claude-net
+
+networks:
+  claude-net:
+    driver: bridge
