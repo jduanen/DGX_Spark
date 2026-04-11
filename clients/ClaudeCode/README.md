@@ -18,6 +18,9 @@
     * specifies model (proxied to your DGX Spark Ollama via env vars)
 
 * working with Claude Code
+  - create the 'CLAUDE.md' with the '/init' command
+    * alternatively, get one from some other location
+    * this defines the ground rules for all interactions
   - scans the mounted codebase ('/workspace') on startup
     * suggests edits, runs bash commands (with confirmation), and commits changes
   - you can drag-and-drop files into the Claude Code window
@@ -45,6 +48,22 @@
         * first created by '/init' command in Claude Code, can be manually edited
       - ????
 
+* The 'vllm' directory contains tools for building a Claude Code container that uses vLLM on my DGX Spark to run models
+
+????
+  - vllm: use vLLM to run models for Claude Code on my DGX Spark
+    * CLAUDE.md
+      - rules for this instance of Claude Code
+      - created by '/init' command in Claude Code
+      - ????
+    * buildClaudeCodeVllm.sh
+      - create a docker image for a local Claude Code instance that uses vLLM on the DGX Spark to run the models
+      - uses 'dockerfile' to define the container that installs a fresh version of Claude Code on each build
+      - mount the desired directory to work in with ????
+    * ?
+????
+
+--------------------------------------
 
     * make local container with Claude Code
       - official Claude Code container for VS Code Dev
@@ -63,16 +82,4 @@
         * `docker compose exec claude-code bash`
 
 
-
-
-  - vllm: use vLLM to run models for Claude Code on my DGX Spark
-    * CLAUDE.md
-      - rules for this instance of Claude Code
-      - created by '/init' command in Claude Code
-      - ????
-    * buildClaudeCodeVllm.sh
-      - create a docker image for a local Claude Code instance that uses vLLM on the DGX Spark to run the models
-      - uses 'dockerfile' to define the container that installs a fresh version of Claude Code on each build
-      - mount the desired directory to work in with ????
-    * ?
 
