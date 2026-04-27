@@ -1,0 +1,22 @@
+services:
+  claude-code:
+    image: claude-code-ollama:latest   # reuses the same base image
+    container_name: claude-code-vllm
+    stdin_open: true
+    tty: true
+    environment:
+      ANTHROPIC_AUTH_TOKEN: vllm
+      ANTHROPIC_API_KEY: ""  # leave empty for local vLLM
+      ANTHROPIC_BASE_URL: http://192.168.166.7:8000
+      CLAUDE_MODEL: ${CLAUDE_MODEL:?set CLAUDE_MODEL to the --served-model-name value (e.g. llama-3.1-8b)}
+    volumes:
+      - ${WORKSPACE_DIR:-.}:/workspace
+    working_dir: /workspace
+    entrypoint: ["/bin/bash", "-lc"]
+    command: ['exec claude --model "$CLAUDE_MODEL"']
+    networks:
+      - claude-net
+
+networks:
+  claude-net:
+    driver: bridge
