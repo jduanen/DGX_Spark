@@ -4,12 +4,13 @@
 #  * tiny-int8 (43 MB): smallest, fastest, low accuracy
 #  * tiny (152 MB):
 #  * base-int8 (80 MB):
-#  * base (291 MB): 
+#  * base (291 MB):
 #  * small-int8 (255 MB):
 #  * small (968 MB):
 #  * medium-int8 (786 MB):
 #  * medium (3.1 GB): larger, slower, more accurate
-#  * large (not always supported or practical on smaller devices)
+#  * large-v3-turbo (1.6 GB): recommended — fastest large model, high accuracy (default)
+#  * large-v3 (3.1 GB): highest accuracy, slower than turbo
 #
 # ${VOICE_NAME}
 #  * en_US-lessac-medium: English, medium-sized, female voice
@@ -27,11 +28,11 @@ services:
     volumes:
       - /home/jdn/Data/WhisperData:/data
     environment:
-      - STT_MODEL_NAME=medium-int8
+      - CUDA_VISIBLE_DEVICES=0
       - WHISPER_HOST_PORT=10300
     command:
       - --model
-      - ${STT_MODEL_NAME:-medium-int8}
+      - ${STT_MODEL_NAME:-large-v3-turbo}
       - --language
       - en
     # enable CUDA
