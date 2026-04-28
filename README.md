@@ -1,12 +1,12 @@
 # DGX_Spark
-Code and documents for the NVIDIA DGX Spark
+
+Code and documents for tools and services that run on the NVIDIA DGX Spark.
 
 ## Home Assistant Voice Assistant STT and TTS Services
 
 I'm running the Piper and Whisper containers on my DGX Spark to provide STT and TTS services to my Home Assistant's Voice Assistant feature.
 
-The default Whisper model is `large-v3-turbo` — significantly higher accuracy than the previous
-`medium-int8` default while still being fast on GPU.
+The default Whisper model is `large-v3-turbo`, which has significantly higher accuracy than the previous (`medium-int8`) default while still being fast on a GPU.
 
 #### Startup Both Services
 
@@ -28,8 +28,7 @@ docker compose down
 
 ### Home Assistant Configuration
 
-The STT/TTS services use the Wyoming protocol and are configured in HA as Wyoming integrations
-on ports 10300 (Whisper) and 10200 (Piper) — no changes needed there.
+The STT/TTS services use the Wyoming protocol and are configured in HA as Wyoming integrations on ports 10300 (Whisper) and 10200 (Piper).
 
 For the **conversation agent** (LLM), HA must use the **OpenAI Conversation** integration
 pointing at vLLM rather than the Ollama integration:
@@ -47,10 +46,10 @@ The DGX Services consist of the following container-based services:
 
 vLLM uses NVIDIA's optimized container (`nvcr.io/nvidia/vllm`) and delivers significantly higher
 throughput than Ollama via PagedAttention and continuous batching. The active model and
-configuration are set in `services/DGX_Services/.env` — edit that file and restart the vllm
+configuration are set in `services/DGX_Services/.env`; edit this file and restart the vllm
 container to swap models.
 
-All of the containers that comprise the DGX Services are started and stopped by using the docker-compose.yml file.
+All of the containers that comprise the DGX Services are started and stopped by using the 'docker-compose.yml' file.
 You start all the services with `docker compose up -d` and stop them all with `docker compose down`.
 You can monitor the logs of all of the services with `docker compose logs`.
 The individual containers can still be managed with standard docker commands, but it is preferred to use docker compose commands. For example, to start only vLLM: `docker compose up -d vllm`.
@@ -82,12 +81,14 @@ The Ollama container stores its data (including downloaded models) in the volume
 
 **vLLM (HuggingFace/FP8 — port 8000):** Set `VLLM_MODEL` in `services/DGX_Services/.env`.
 
-|--Model (HF ID)--|--Source--|--Features--|--My Use Cases--|
+|  Model (HF ID)  |  Source  |  Features  |  My Use Cases  |
+|-----------------|----------|------------|----------------|
 | nvidia/Llama-3.1-8B-Instruct-FP8 | NVIDIA | FP8-quantized, fast | default vLLM model |
 
 **Ollama (GGUF — port 11434):** Use `ollama pull <name>` as before.
 
-|--Model Name:Size--|--Source--|--Features--|--My Use Cases--|
+|  Model Name:Size  |  Source  |  Features  |  My Use Cases  |
+|-------------------|----------|------------|----------------|
 | codellama:70b | Meta | generating and discussing code, built on Llama2 | coding assistant |
 | deepseek-coder-v2:latest | Deepseek | MoE, code LLM, comparable to GPT4-Turbo | coding assistant |
 | glm-4.7-flash:latest | ? | 30b-A3B MoE | OpenClaw default model |
@@ -107,7 +108,7 @@ The Ollama container stores its data (including downloaded models) in the volume
 
 * ${HOME}/bin/
   - ollamaList.sh: list models available for download from the Ollama website
-  --> TODO move these to DGX_Spark
+    * --> TODO move these to DGX_Spark
   - ollamaModels.sh: list the models currently loaded in the local Ollama container
   - ollamaPull.sh: pull a model from the Ollama website into the local Ollama container
 * ${HOME}/Code/DGX_Spark/services/Ollama/
@@ -220,24 +221,23 @@ It takes user inputs (e.g., chat, commands, web requests, etc.) and calls from t
 
 The installer installs all dependencies for OpenClaw, including Node.js and npm.
 
-'''bash
+```bash
 curl -fsSL https://openclaw.ai/install.sh | bash
-'''
+```
 
 This is an inherently insecure app, so they are up-front about needing to be careful with it.
-They recommend this as a baseline:
-│  - Pairing/allowlists + mention gating.                                                    │
-│  - Multi-user/shared inbox: split trust boundaries (separate gateway/credentials, ideally  │
-│    separate OS users/hosts).                                                               │
-│  - Sandbox + least-privilege tools.                                                        │
-│  - Shared inboxes: isolate DM sessions (`session.dmScope: per-channel-peer`) and keep      │
-│    tool access minimal.                                                                    │
-│  - Keep secrets out of the agent’s reachable filesystem.                                   │
-│  - Use the strongest available model for any bot with tools or untrusted inboxes.          │
-│                                              
-They also recommend running these commands regularly:
-│  openclaw security audit --deep                                                            │
-│  openclaw security audit --fix                                                             │
+
+* They recommend this as a baseline:
+  - pairing/allowlists and mention gating
+  - multi-user/shared inbox: split trust boundaries (separate gateway/credentials, ideally separate OS users/hosts)
+  - Sandbox and least-privilege tools
+  - Shared inboxes: isolate DM sessions (`session.dmScope: per-channel-peer`) and keep tool access minimal
+  - Keep secrets out of the agent’s reachable filesystem
+  - Use the strongest available model for any bot with tools or untrusted inboxes
+
+* They also recommend running these commands regularly:
+  - `openclaw security audit --deep`
+  - `openclaw security audit --fix`
 And read: https://docs.openclaw.ai/gateway/security
 
 I connect it to my Ollama instance running on the DGX Spark, in local-only mode.
@@ -381,49 +381,6 @@ openclaw --version
 ### Containerized Use
 
 ????
-
-## NeMo Training Service
-
-On-demand NVIDIA NeMo container for training and fine-tuning audio/ML models on the DGX Spark.
-Currently used to build an **audio signature classifier**.
-
-The service is defined in `services/NeMo/` and uses NVIDIA's official NeMo container
-(`nvcr.io/nvidia/nemo`). It only starts when explicitly requested (not auto-started).
-
-### Quick Start
-
-```bash
-cd services/NeMo
-
-# Pull the image (first time — large download)
-docker compose --profile training pull nemo
-
-# Interactive shell
-docker compose --profile training run --rm nemo bash
-```
-
-### Audio Classifier Workflow
-
-```bash
-# Step 1: prepare NeMo JSON manifests from labeled .wav files
-docker compose --profile training run --rm nemo \
-    python /workspace/scripts/prepare_data.py \
-    --audio-dir /workspace/data/audio \
-    --manifest-dir /workspace/data/manifests
-
-# Step 2: fine-tune a pre-trained NVIDIA audio encoder
-docker compose --profile training run --rm nemo \
-    python /workspace/scripts/finetune_audio_classifier.py \
-    --train-manifest /workspace/data/manifests/train.json \
-    --val-manifest   /workspace/data/manifests/val.json \
-    --num-classes    <N> \
-    --epochs         20
-```
-
-Training data lives in `/home/jdn/Data/NeMo/audio/<class_label>/`.
-Checkpoints are saved to `/home/jdn/Data/NeMoCheckpoints/`.
-
-See `services/NeMo/README.md` for full documentation.
 
 ## NemoClaw
 
