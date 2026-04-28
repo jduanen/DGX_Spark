@@ -5,14 +5,17 @@ Code and documents for the NVIDIA DGX Spark
 
 I'm running the Piper and Whisper containers on my DGX Spark to provide STT and TTS services to my Home Assistant's Voice Assistant feature.
 
+The default Whisper model is `large-v3-turbo` — significantly higher accuracy than the previous
+`medium-int8` default while still being fast on GPU.
+
 #### Startup Both Services
 
 ```bash
-# Use default values (medium-int8 + en_US-lessac-medium)
+# Use default values (large-v3-turbo + en_US-lessac-medium)
 docker compose up -d
 
 # Or override on the command line:
-STT_MODEL_NAME=tiny-int8 \
+STT_MODEL_NAME=large-v3 \
 VOICE_NAME=de_DE-jonas \
 docker compose up -d
 ```
@@ -23,33 +26,66 @@ docker compose up -d
 docker compose down
 ```
 
-### TODO
+### Home Assistant Configuration
 
-* Figure out best way to accelerate these containers -- e.g., use nvidia-mps
-* Figure out how to reduce the latency for more responsive voice interactions on HA
+The STT/TTS services use the Wyoming protocol and are configured in HA as Wyoming integrations
+on ports 10300 (Whisper) and 10200 (Piper) — no changes needed there.
+
+For the **conversation agent** (LLM), HA must use the **OpenAI Conversation** integration
+pointing at vLLM rather than the Ollama integration:
+- Endpoint: `http://spark-8d0d.lan:8000/v1`
+- API key: `vllm` (any value works)
+- Model: the `VLLM_SERVED_NAME` alias set in `services/DGX_Services/.env`
 
 ## DGX Services
 
 My DGX Spark system runs a set of services that can be relied upon to be always running.
 The DGX Services consist of the following container-based services:
-  - Ollama: locally serves all the models that have been downloaded to it
-  - OpenWebUI: web-browser-accessible GUI front-end for the models served by the Ollama container
-  - Claude Code: local coding assistant that uses the models provided by the Ollama container
+  - **vLLM**: primary high-performance LLM server for HuggingFace/FP8 models (port 8000, OpenAI-compatible API)
+  - **Ollama**: secondary LLM server for GGUF-format models not supported by vLLM (port 11434)
+  - **OpenWebUI**: web-browser-accessible GUI front-end showing models from both vLLM and Ollama (port 12000)
+
+vLLM uses NVIDIA's optimized container (`nvcr.io/nvidia/vllm`) and delivers significantly higher
+throughput than Ollama via PagedAttention and continuous batching. The active model and
+configuration are set in `services/DGX_Services/.env` — edit that file and restart the vllm
+container to swap models.
 
 All of the containers that comprise the DGX Services are started and stopped by using the docker-compose.yml file.
 You start all the services with `docker compose up -d` and stop them all with `docker compose down`.
 You can monitor the logs of all of the services with `docker compose logs`.
-The individual containers can still be managed with standard docker commands, but it is preferred to use docker compose commands. For example, to start the Claude Code container, use `docker compose up -d claude-code` (or `docker compose up -d --no-deps claude-code`, to start only Claude Code, and none of its dependencies).
+The individual containers can still be managed with standard docker commands, but it is preferred to use docker compose commands. For example, to start only vLLM: `docker compose up -d vllm`.
 
 Currently, the STT/TTS containers are run by a separate service, called HAVA. I am considering moving these services under the DGX Services umbrella.
 
+### vLLM Service
+
+vLLM is the primary LLM server, serving HuggingFace and FP8-quantized models with an
+OpenAI-compatible API on port 8000. Model configuration lives in `services/DGX_Services/.env`:
+
+```bash
+# To swap models:
+# 1. Edit VLLM_MODEL and VLLM_SERVED_NAME in services/DGX_Services/.env
+# 2. docker compose restart vllm
+# 3. Verify: curl http://spark-8d0d.lan:8000/v1/models
+```
+
+HuggingFace model weights are cached in `/home/jdn/Data/vLLMModels/`.
+
 ### Ollama Service
 
-????
+Ollama is retained as a secondary server for GGUF-format models that vLLM does not support.
+All new models should prefer HuggingFace format and be served through vLLM.
 
 The Ollama container stores its data (including downloaded models) in the volume 'ollama', and the Open-WebUI container stores its persistant data in the 'open-webui' volume.
 
-#### Local Ollama Models
+#### Models by Backend
+
+**vLLM (HuggingFace/FP8 — port 8000):** Set `VLLM_MODEL` in `services/DGX_Services/.env`.
+
+|--Model (HF ID)--|--Source--|--Features--|--My Use Cases--|
+| nvidia/Llama-3.1-8B-Instruct-FP8 | NVIDIA | FP8-quantized, fast | default vLLM model |
+
+**Ollama (GGUF — port 11434):** Use `ollama pull <name>` as before.
 
 |--Model Name:Size--|--Source--|--Features--|--My Use Cases--|
 | codellama:70b | Meta | generating and discussing code, built on Llama2 | coding assistant |
@@ -145,12 +181,26 @@ Script to start up ComfyUI on the DGX Spark. Offers a brower interface on `https
 
 ## Claude Code
 
-**TBD**
+Two client variants are available, differing only in which backend they target:
 
-* Best coding models for running locally on Ollama (in order of preference)
-  - qwen3-coder:30b
-  - gpt-oss:20b
-  - deepseek-coder-v2:latest
+| Variant | Script | Backend | Port |
+|---------|--------|---------|------|
+| Ollama | `clients/ClaudeCode/ollama/startClaudeCodeOllama.sh` | Ollama (GGUF) | 11434 |
+| vLLM | `clients/ClaudeCode/vllm/startClaudeCodeVllm.sh` | vLLM (HF/FP8) | 8000 |
+
+```bash
+# vLLM-backed Claude Code (preferred — higher throughput)
+./clients/ClaudeCode/vllm/startClaudeCodeVllm.sh [<workspace-dir> [<model-alias>]]
+# model-alias must match VLLM_SERVED_NAME in services/DGX_Services/.env
+
+# Ollama-backed Claude Code (for GGUF models)
+./clients/ClaudeCode/ollama/startClaudeCodeOllama.sh [<workspace-dir> [<model>]]
+```
+
+* Best coding models for running locally (in order of preference)
+  - qwen3-coder:30b (Ollama)
+  - gpt-oss:20b (Ollama)
+  - deepseek-coder-v2:latest (Ollama)
 
 ## Open Code
 
@@ -331,6 +381,49 @@ openclaw --version
 ### Containerized Use
 
 ????
+
+## NeMo Training Service
+
+On-demand NVIDIA NeMo container for training and fine-tuning audio/ML models on the DGX Spark.
+Currently used to build an **audio signature classifier**.
+
+The service is defined in `services/NeMo/` and uses NVIDIA's official NeMo container
+(`nvcr.io/nvidia/nemo`). It only starts when explicitly requested (not auto-started).
+
+### Quick Start
+
+```bash
+cd services/NeMo
+
+# Pull the image (first time — large download)
+docker compose --profile training pull nemo
+
+# Interactive shell
+docker compose --profile training run --rm nemo bash
+```
+
+### Audio Classifier Workflow
+
+```bash
+# Step 1: prepare NeMo JSON manifests from labeled .wav files
+docker compose --profile training run --rm nemo \
+    python /workspace/scripts/prepare_data.py \
+    --audio-dir /workspace/data/audio \
+    --manifest-dir /workspace/data/manifests
+
+# Step 2: fine-tune a pre-trained NVIDIA audio encoder
+docker compose --profile training run --rm nemo \
+    python /workspace/scripts/finetune_audio_classifier.py \
+    --train-manifest /workspace/data/manifests/train.json \
+    --val-manifest   /workspace/data/manifests/val.json \
+    --num-classes    <N> \
+    --epochs         20
+```
+
+Training data lives in `/home/jdn/Data/NeMo/audio/<class_label>/`.
+Checkpoints are saved to `/home/jdn/Data/NeMoCheckpoints/`.
+
+See `services/NeMo/README.md` for full documentation.
 
 ## NemoClaw
 
